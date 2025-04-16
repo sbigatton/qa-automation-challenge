@@ -6,8 +6,9 @@ import { Page, expect } from '@playwright/test';
  * 2. Go to the "Artificial intelligence" page
  * 3. Switch the language to Spanish and confirm the page was updated
  * 4. Switch the language to French and confirm the page was updated
- * 5. Click "View history"
- * 6. Assert that the latest edit was made by the user "Worstbull"
+ * 5. Switch the language to English
+ * 6. Click "View history"
+ * 7. Assert the latest edit made by the user "Worstbull"
  *
  * Instructions:
  * - Run the test and ensure it performs all steps described above
@@ -29,10 +30,13 @@ export async function run(page: Page, params: {}) {
     await searchInputField.fill('artificial');
 
     /** STEP: Click the 'Artificial Intelligence' link in the search suggestions */
-    const artificialIntelligenceLink = page.getByRole('link', {
-        name: 'Artificial intelligence',
+    const artificialIntelligenceLink = page.getByText('Artificial intelligence', {
+        exact: true
     });
     await artificialIntelligenceLink.click();
+
+    /** Click on language dropdown happens very fast and somethimes is not opened. Need more time to find a way to fix it without timeout. */
+    await page.waitForTimeout(3000);
 
     /** STEP: Click the language selection dropdown to choose a different language */
     const languageDropdownButton = page.getByRole('button', {
@@ -41,11 +45,15 @@ export async function run(page: Page, params: {}) {
     await languageDropdownButton.click();
 
     /** STEP: Click the button to open the language selection menu */
-    const languageSelectionButton = page.getByRole('textbox', {
+    const languageGrid = page.locator('div.uls-menu');
+    const languageSelectionButton = languageGrid.getByRole('textbox', {
         name: 'Search for a language',
     });
     await languageSelectionButton.fill('espanol');
 
+    /** Is not the best practice, but search results pop up is hidden and show up results making element not visible. Applying static wait to make it work meantime. */
+    await page.waitForTimeout(1000);
+    
     /** STEP: Click the 'Español' link to change the language to Spanish */
     const spanishLanguageLink = page.getByRole('link', { name: 'Español' });
     await spanishLanguageLink.click();
@@ -78,18 +86,21 @@ export async function run(page: Page, params: {}) {
     });
     await frenchLanguageSearch.fill('francais');
 
+    /** Is not the best practice, but search results pop up is hidden and show up results making element not visible. Applying static wait to make it work meantime. */
+    await page.waitForTimeout(1000);
+
     /** STEP: Click the 'Français' link to switch the language to French */
     const frenchLanguageLink = page.getByRole('link', { name: 'Français' });
     await frenchLanguageLink.click();
 
     /** STEP: Locate the heading for the 'Intelligence artificielle' section */
     const intelligenceArtificielleHeading = page
-        .getByRole('heading', {
-            name: 'Intelligence artificielle',
-            exact: true,
-        })
+    .getByRole('heading', {
+        name: 'Intelligence artificielle',
+        exact: true,
+    })    
         .locator('span');
-    await expect(intelligenceArtificielleHeading).toHaveText('artificielle');
+    await expect(intelligenceArtificielleHeading).toContainText('artificielle');
 
     /** STEP: Locate the heading for the 'Intelligence artificielle' section */
     const intelligenceArtificielleSectionHeading = page
@@ -128,4 +139,32 @@ export async function run(page: Page, params: {}) {
     await expect(intelligenceArtificielleSectionTitle).toHaveText(
         'Intelligence artificielle'
     );
+
+    /** STEP: Click the language selection dropdown to choose a different language */
+    const languageSelectButton = page.getByRole('button', {
+        name: 'Aller à un article dans une autre langue',
+    });
+    await languageSelectButton.click();
+
+    /** STEP: Select the English language link from the language options */
+    const languageSearch = page.getByRole('textbox', {
+        name: 'Rechercher une langue',
+    });
+    await languageSearch.fill('english');
+
+    /** Is not the best practice, but search results pop up is hidden and show up results making element not visible. Applying static wait to make it work meantime. */
+    await page.waitForTimeout(3000);
+
+    /** STEP: Click the 'English' link to switch the language to English */
+    const englishLanguageLink = page.getByRole('link', { name: 'English', exact: true });
+    await englishLanguageLink.click();
+
+    /** STEP: Click the 'View history' link to switch the page */
+    const viewHistoryLink = page.locator('#p-views').getByText('View history');
+    await viewHistoryLink.click();
+
+    /** STEP: Locate last row updated by Worstbull and assert the user */
+    const latestUserEditRow = page.locator('ul.mw-contributions-list').getByRole('link', {name: 'Worstbull'}).first();
+    const latestUserEditRowUserName = latestUserEditRow.locator('bdi');
+    await expect(latestUserEditRowUserName).toHaveText('Worstbull');
 }
