@@ -18,9 +18,19 @@ export async function run(page: Page, params: {}) {
     /** STEP: Navigate to URL */
     await page.goto('https://en.wikipedia.org/wiki/Main_Page');
 
+    /** STEP: Assert total number of articles is less than 7,000,000 */
+    const totalArticlesLink = page.getByTitle('Special:Statistics').nth(1);
+    const totalArticles = await totalArticlesLink.textContent();
+    const cleanTotalNumber = Number(totalArticles?.toString().replaceAll(',', ''));
+    expect(cleanTotalNumber).toBeLessThan(7000000);
+
     /** STEP: Click the link to view the total number of articles in English */
-    const totalArticlesLink = page.getByRole('link', { name: '6,970,005' });
     await totalArticlesLink.click();
+
+    /**
+     * Options are disabled using my user account.
+     * From this point I have tried to play with viewportsize and a function to go into settings appearence and set size and colors but it does not work for me.
+     */
 
     /** STEP: Select the 'Small' text size option in the appearance settings */
     const smallTextSizeOption = page.getByRole('radio', { name: 'Small' });
